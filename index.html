@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>notenklar — MIDI säubern. Nur Noten behalten.</title>
+  <meta name="description"
+    content="Entferne Controller-Daten, Program Changes, Pitch-Bend und SysEx aus deinen MIDI-Dateien. Alles lokal im Browser, mit Notenvorschau und sauberem Download.">
+  <meta name="theme-color" content="#08090d">
+  <meta property="og:title" content="notenklar — Dein MIDI. Nur Noten.">
+  <meta property="og:description"
+    content="MIDI-Dateien lokal bereinigen: Nur Noten, Tempo und Takt bleiben. Ohne Upload, ohne Anmeldung.">
+  <meta property="og:type" content="website">
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b0d13'/%3E%3Cpath d='M24 44V22l20-4v20' fill='none' stroke='%238bead2' stroke-width='4' stroke-linecap='round'/%3E%3Ccircle cx='19' cy='45' r='6' fill='%238fa7ff'/%3E%3Ccircle cx='39' cy='39' r='6' fill='%238bead2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/styles.css">
+  <noscript>
+    <style>
+      [data-reveal] {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    </style>
+  </noscript>
+  <script src="assets/midi.js" defer></script>
+  <script src="assets/app.js" defer></script>
+</head>
+
+<body id="top">
+
+  <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-note" viewBox="0 0 24 24">
+      <path d="M8 16V6l11-2v10" />
+      <circle cx="5.5" cy="17.5" r="2.5" />
+      <circle cx="16.5" cy="15.5" r="2.5" />
+    </symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24">
+      <rect x="4.5" y="10.5" width="15" height="10" rx="3" />
+      <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
+      <path d="M12 14.5v2" />
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24">
+      <path d="M12 3.2 19 6v5.4c0 4.4-3 7.9-7 9.4-4-1.5-7-5-7-9.4V6l7-2.8Z" />
+      <path d="m9 11.8 2 2 4-4.2" />
+    </symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24">
+      <path d="M12 3.5c.6 4.7 2.8 6.9 7.5 7.5-4.7.6-6.9 2.8-7.5 7.5-.6-4.7-2.8-6.9-7.5-7.5 4.7-.6 6.9-2.8 7.5-7.5Z" />
+    </symbol>
+    <symbol id="i-wave" viewBox="0 0 24 24">
+      <path d="M3 12h2.2l1.9-5.2 3.1 10.4L13.4 5l2.8 12 1.7-5H21" />
+    </symbol>
+    <symbol id="i-download" viewBox="0 0 24 24">
+      <path d="M12 3.5v11" />
+      <path d="m7.5 10.5 4.5 4 4.5-4" />
+      <path d="M4.5 17.5v1.3a1.7 1.7 0 0 0 1.7 1.7h11.6a1.7 1.7 0 0 0 1.7-1.7v-1.3" />
+    </symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24">
+      <path d="M12 20.5v-11" />
+      <path d="m7.5 13.5 4.5-4 4.5 4" />
+      <path d="M4.5 7.5V5.7A1.7 1.7 0 0 1 6.2 4h11.6a1.7 1.7 0 0 1 1.7 1.7v1.8" />
+    </symbol>
+    <symbol id="i-play" viewBox="0 0 24 24">
+      <path d="M8 5.7v12.6L18.7 12Z" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24">
+      <rect x="7" y="7" width="10" height="10" rx="2.2" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-x" viewBox="0 0 24 24">
+      <path d="m6.5 6.5 11 11M17.5 6.5l-11 11" />
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24">
+      <path d="m5 12.5 4.5 4.5L19 6.8" />
+    </symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24">
+      <path d="m6 9 6 6 6-6" />
+    </symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24">
+      <rect x="3.5" y="4.5" width="17" height="5" rx="1.5" />
+      <path d="M5 9.5v9A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-9" />
+      <path d="M10 13.5h4" />
+    </symbol>
+    <symbol id="i-file" viewBox="0 0 24 24">
+      <path d="M6 3.5h7l5 5v12H6z" />
+      <path d="M13 3.5v5h5" />
+      <path d="M9 13h6M9 16.5h5" />
+    </symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24">
+      <path d="M4 12h15" />
+      <path d="m13.5 6.5 5.5 5.5-5.5 5.5" />
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 11v5" />
+      <circle cx="12" cy="7.8" r=".9" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24">
+      <path d="M4 8h16M4 16h16" />
+    </symbol>
+  </svg>
+
+  <div class="ambient" aria-hidden="true">
+    <span class="ambient__orb ambient__orb--one"></span>
+    <span class="ambient__orb ambient__orb--two"></span>
+    <span class="ambient__orb ambient__orb--three"></span>
+    <span class="ambient__grid"></span>
+    <span class="ambient__grain"></span>
+  </div>
+
+  <a class="skip-link" href="#studio">Direkt zum MIDI-Studio</a>
+
+  <noscript>
+    <div class="noscript-note" role="alert">
+      <strong>JavaScript ist deaktiviert.</strong>
+      notenklar verarbeitet deine MIDI-Dateien vollständig lokal im Browser und benötigt dafür JavaScript.
+      Bitte aktiviere JavaScript und lade die Seite neu.
+    </div>
+  </noscript>
+
+  <header class="site-header" id="siteHeader">
+    <div class="shell header__inner">
+      <a class="brand" href="#top" aria-label="notenklar – zum Seitenanfang">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M8 16V6l11-2v10" />
+            <circle cx="5.5" cy="17.5" r="2.5" />
+            <circle cx="16.5" cy="15.5" r="2.5" />
+          </svg>
+        </span>
+        <span class="brand__name">notenklar</span>
+      </a>
+
+      <nav class="nav" id="primaryNav" aria-label="Hauptnavigation">
+        <a class="nav__link" href="#funktionen">Funktionen</a>
+        <a class="nav__link" href="#ablauf">Ablauf</a>
+        <a class="nav__link" href="#details">Details</a>
+        <a class="nav__link nav__link--studio" href="#studio">
+          MIDI säubern
+          <svg class="icon" aria-hidden="true">
+            <use href="#i-arrow"></use>
+          </svg>
+        </a>
+      </nav>
+
+      <div class="header__actions">
+        <a class="btn btn--glass btn--sm header__cta" href="#studio">
+          MIDI säubern
+          <svg class="icon" aria-hidden="true">
+            <use href="#i-arrow"></use>
+          </svg>
+        </a>
+        <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="primaryNav"
+          aria-label="Menü öffnen">
+          <span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero__spotlight" aria-hidden="true"></div>
+      <div class="shell hero__inner">
+        <div class="hero__copy">
+          <div class="eyebrow hero__eyebrow" data-reveal style="--delay: .02s">
+            <span class="live-dot"></span>
+            <span>100 % lokal im Browser</span>
+            <span class="eyebrow__divider" aria-hidden="true"></span>
+            <span class="eyebrow__soft">kein Upload</span>
+          </div>
+
+          <h1 data-reveal style="--delay: .08s">
+            Dein MIDI.<br>
+            <span class="text-gradient">Nur Noten.</span>
+          </h1>
+
+          <p class="hero__lead" data-reveal style="--delay: .16s">
+            Ein Drop, ein Klick: notenklar entfernt CC-Daten, Program Changes,
+            Pitch-Bend, Aftertouch und SysEx. Übrig bleiben deine Noten –
+            sauber, spielbar, sofort wieder herunterladbar.
+          </p>
+        </div>
+
+        <div class="studio-wrap" id="studio" data-reveal style="--delay: .24s">
+          <div class="studio">
+            <div class="studio__bar">
+              <div class="studio__brand">
+                <span class="studio__logo" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M8 16V6l11-2v10" />
+                    <circle cx="5.5" cy="17.5" r="2.5" />
+                    <circle cx="16.5" cy="15.5" r="2.5" />
+                  </svg>
+                </span>
+                <span>notenklar</span>
+                <span class="studio__version">v3.5</span>
+              </div>
+              <div class="status" id="studioStatus" role="status">
+                <span class="status__dot"></span>
+                <span id="studioStatusText">Bereit</span>
+              </div>
+            </div>
+
+            <div class="studio__body">
+              <div class="dropzone" id="dropzone" role="button" tabindex="0"
+                aria-label="MIDI-Dateien auswählen oder hier ablegen" aria-describedby="dropHint">
+                <div class="dropzone__halo" aria-hidden="true"></div>
+                <div class="dropzone__scan" aria-hidden="true"></div>
+
+                <div class="drop-icon" aria-hidden="true">
+                  <span class="drop-icon__ring"></span>
+                  <svg class="drop-icon__note">
+                    <use href="#i-note"></use>
+                  </svg>
+                  <span class="drop-icon__badge"><svg>
+                      <use href="#i-upload"></use>
+                    </svg></span>
+                </div>
+
+                <h2 class="dropzone__title">MIDI hier ablegen</h2>
+                <p class="dropzone__hint" id="dropHint">
+                  oder <span class="dropzone__link">Dateien auswählen</span>
+                  <span class="dropzone__formats">
+                    <span class="dot-sep" aria-hidden="true">·</span> .mid &amp; .midi
+                    <span class="dot-sep" aria-hidden="true">·</span> bis 25 MB
+                  </span>
+                </p>
+                <p class="dropzone__promise">
+                  <svg class="icon" aria-hidden="true">
+                    <use href="#i-lock"></use>
+                  </svg>
+                  Deine Dateien bleiben auf diesem Gerät.
+                </p>
+
+                <div class="dropzone__busy" aria-hidden="true">
+                  <span class="eq"><i></i><i></i><i></i><i></i></span>
+                  <span>Wird verarbeitet …</span>
+                </div>
+              </div>
+
+              <div class="studio__controls">
+                <div class="control">
+                  <span class="control__label" id="outputLabel">Ausgabe</span>
+                  <div class="segmented" role="group" aria-labelledby="outputLabel">
+                    <button class="segmented__btn is-active" type="button" data-merge="false" aria-pressed="true">Spuren
+                      behalten</button>
+                    <button class="segmented__btn" type="button" data-merge="true" aria-pressed="false">Eine
+                      Spur</button>
+                  </div>
+                </div>
+                <p class="studio__note">
+                  <svg class="icon" aria-hidden="true">
+                    <use href="#i-info"></use>
+                  </svg>
+                  Tempo &amp; Taktart bleiben für korrektes Timing erhalten, Tonart für den Kontext.
+                </p>
+              </div>
+
+              <div class="file-list" id="fileList" hidden>
+                <div class="file-list__head">
+                  <div class="file-list__title-wrap">
+                    <h2 class="file-list__title">Deine Dateien</h2>
+                    <p class="file-list__summary" id="fileSummary" aria-live="polite"></p>
+                  </div>
+                  <button class="btn btn--glass btn--sm zip-btn" id="downloadAll" type="button" disabled
+                    aria-label="Alle bereinigten Dateien als ZIP herunterladen" title="Alle als ZIP herunterladen">
+                    <svg class="icon" aria-hidden="true">
+                      <use href="#i-archive"></use>
+                    </svg>
+                    <span>Alle als ZIP</span>
+                  </button>
+                </div>
+                <div class="file-list__items" id="fileItems"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="trust-row" data-reveal style="--delay: .32s">
+          <span><svg class="icon" aria-hidden="true">
+              <use href="#i-lock"></use>
+            </svg> Dateien bleiben lokal</span>
+          <span><svg class="icon" aria-hidden="true">
+              <use href="#i-shield"></use>
+            </svg> Keine Anmeldung</span>
+          <span><svg class="icon" aria-hidden="true">
+              <use href="#i-spark"></use>
+            </svg> Kostenlos</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="ticker" aria-label="Daten, die entfernt werden">
+      <div class="shell ticker__inner" data-reveal>
+        <span class="ticker__label"><span class="live-dot live-dot--warm"></span> Fliegt raus</span>
+        <div class="ticker__items">
+          <span>Control Change</span>
+          <span>Program Change</span>
+          <span>Pitch-Bend</span>
+          <span>Aftertouch</span>
+          <span>SysEx</span>
+          <span>Metadaten</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="funktionen">
+      <div class="shell">
+        <div class="section-head" data-reveal>
+          <p class="eyebrow">Warum notenklar</p>
+          <h2>Sauberkeit, die man hört.</h2>
+          <p class="section-lead">
+            Keine versteckten Controller, keine alten Presets, kein Datenrauschen.
+            Nur das, was du gespielt hast – mit voller Kontrolle vor dem Download.
+          </p>
+        </div>
+
+        <div class="features">
+          <article class="feature" data-reveal style="--delay: .02s">
+            <span class="feature__accent feature__accent--blue" aria-hidden="true"></span>
+            <span class="feature__icon"><svg class="icon" aria-hidden="true">
+                <use href="#i-wave"></use>
+              </svg></span>
+            <div class="feature__body">
+              <h3>Nur die Noten.</h3>
+              <p>
+                CC-Daten, Program Changes, Pitch-Bend, Aftertouch und SysEx werden
+                vollständig entfernt. Kein Ballast, keine Preset-Reste.
+              </p>
+            </div>
+            <div class="feature__tags" role="group" aria-label="Entfernte Datentypen">
+              <span>CC</span><span>PC</span><span>Bend</span><span>SysEx</span>
+            </div>
+            <svg class="feature__watermark" aria-hidden="true">
+              <use href="#i-wave"></use>
+            </svg>
+          </article>
+
+          <article class="feature" data-reveal style="--delay: .08s">
+            <span class="feature__accent feature__accent--mint" aria-hidden="true"></span>
+            <span class="feature__icon"><svg class="icon" aria-hidden="true">
+                <use href="#i-shield"></use>
+              </svg></span>
+            <div class="feature__body">
+              <h3>Lokal. Wirklich.</h3>
+              <p>
+                Die Verarbeitung passiert in deinem Browser. Deine MIDI-Dateien
+                verlassen das Gerät nicht – keine Server, keine Konten, kein Tracking.
+              </p>
+            </div>
+            <div class="feature__tags" role="group" aria-label="Datenschutz">
+              <span>0 Uploads</span><span>0 Cookies</span><span>0 Tracking</span>
+            </div>
+            <svg class="feature__watermark" aria-hidden="true">
+              <use href="#i-shield"></use>
+            </svg>
+          </article>
+
+          <article class="feature" data-reveal style="--delay: .14s">
+            <span class="feature__accent feature__accent--violet" aria-hidden="true"></span>
+            <span class="feature__icon"><svg class="icon" aria-hidden="true">
+                <use href="#i-note"></use>
+              </svg></span>
+            <div class="feature__body">
+              <h3>Du behältst den Blick.</h3>
+              <p>
+                Piano-Roll-Vorschau, Ereignis-Statistik und eine Synth-Vorschau.
+                Du siehst genau, was übrig bleibt – bevor du herunterlädst.
+              </p>
+            </div>
+            <div class="feature__tags" role="group" aria-label="Funktionen">
+              <span>Piano Roll</span><span>Statistik</span><span>Vorschau</span>
+            </div>
+            <svg class="feature__watermark" aria-hidden="true">
+              <use href="#i-note"></use>
+            </svg>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--steps" id="ablauf">
+      <div class="shell">
+        <div class="section-head section-head--center" data-reveal>
+          <p class="eyebrow">In drei Schritten</p>
+          <h2>Reinziehen. Bereinigen. Mitnehmen.</h2>
+          <p class="section-lead">Kein Setup, keine Installation. Einfach Datei rein und saubere Noten wieder raus.</p>
+        </div>
+
+        <div class="steps">
+          <article class="step" data-reveal style="--delay: .02s">
+            <span class="step__num">01</span>
+            <span class="step__icon"><svg class="icon" aria-hidden="true">
+                <use href="#i-upload"></use>
+              </svg></span>
+            <h3>MIDI ablegen</h3>
+            <p>Ziehe eine oder mehrere MIDI-Dateien ins Studio oder wähle sie aus.</p>
+            <span class="step__hint">.mid &amp; .midi · bis 25 MB</span>
+          </article>
+          <article class="step" data-reveal style="--delay: .08s">
+            <span class="step__num">02</span>
+            <span class="step__icon"><svg class="icon" aria-hidden="true">
+                <use href="#i-spark"></use>
+              </svg></span>
+            <h3>Automatisch bereinigt</h3>
+            <p>notenklar liest jede Spur, löst Notenpaare und wirft alles raus, was keine Note ist.</p>
+            <span class="step__hint">Controller &amp; Presets raus</span>
+          </article>
+          <article class="step" data-reveal style="--delay: .14s">
+            <span class="step__num">03</span>
+            <span class="step__icon"><svg class="icon" aria-hidden="true">
+                <use href="#i-download"></use>
+              </svg></span>
+            <h3>Sauber herunterladen</h3>
+            <p>Prüfe die Notenvorschau und lade deine bereinigte MIDI-Datei direkt herunter.</p>
+            <span class="step__hint">Einzeln oder als ZIP</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="details">
+      <div class="shell">
+        <div class="section-head section-head--center" data-reveal>
+          <p class="eyebrow">Volle Transparenz</p>
+          <h2>Was bleibt. Was fliegt.</h2>
+          <p class="section-lead">
+            notenklar räumt gründlich auf – aber nie auf Kosten deines Timings.
+            Das bleibt in der Datei, alles andere nicht.
+          </p>
+        </div>
+
+        <div class="detail-grid">
+          <article class="detail detail--keep" data-reveal style="--delay: .02s">
+            <div class="detail__head">
+              <span class="detail__icon"><svg class="icon" aria-hidden="true">
+                  <use href="#i-check"></use>
+                </svg></span>
+              <div>
+                <h3>Bleibt drin</h3>
+                <p>Die musikalische Substanz.</p>
+              </div>
+            </div>
+            <ul class="detail__list">
+              <li><svg class="icon" aria-hidden="true">
+                  <use href="#i-check"></use>
+                </svg><span><strong>Note On &amp; Note Off</strong> – inklusive Anschlagstärke</span></li>
+              <li><svg class="icon" aria-hidden="true">
+                  <use href="#i-check"></use>
+                </svg><span><strong>Tempo &amp; Tempoänderungen</strong> – für exaktes Timing</span></li>
+              <li><svg class="icon" aria-hidden="true">
+                  <use href="#i-check"></use>
+                </svg><span><strong>Taktart &amp; Tonart</strong> – für den musikalischen Kontext</span></li>
+              <li><svg class="icon" aria-hidden="true">
+                  <use href="#i-check"></use>
+                </svg><span><strong>Spurname</strong> – zur Orientierung in der DAW</span></li>
+              <li><svg class="icon" aria-hidden="true">
+                  <use href="#i-check"></use>
+                </svg><span><strong>Start- &amp; Endstille</strong> – die Zeitachse bleibt erhalten</span></li>
+            </ul>
+            <p class="detail__foot">Deine Noten bleiben exakt an ihrem Platz – inklusive der Luft davor und danach.</p>
+          </article>
+
+          <article class="detail detail--drop" data-reveal style="--delay: .08s">
+            <div class="detail__head">
+              <span class="detail__icon"><svg class="icon" aria-hidden="true">
+                  <use href="#i-x"></use>
+                </svg></span>
+              <div>
+                <h3>Fliegt raus</h3>
+                <p>Alles, was keine Note ist.</p>
+              </div>
+            </div>
+            <ul class="detail__list">
+              <li><svg class="icon" aria-hidden="true">
+                  <use href="#i-x"></use>
+                </svg><span><strong>Control Changes</strong> – Sustain, Modwheel, Volume, Pan …</span></li>
+              <li><svg class="icon" aria-hidden="true">
+                  <use href="#i-x"></use>
+                </svg><span><strong>Program Changes &amp; Bank Select</strong> – keine Preset-Reste</span></li>
+              <li><svg class="icon" aria-hidden="true">
+                  <use href="#i-x"></use>
+                </svg><span><strong>Pitch-Bend</strong> – inklusive aller Kurven</span></li>
+              <li><svg class="icon" aria-hidden="true">
+                  <use href="#i-x"></use>
+                </svg><span><strong>Aftertouch</strong> – polyphon und kanalweit</span></li>
+              <li><svg class="icon" aria-hidden="true">
+                  <use href="#i-x"></use>
+                </svg><span><strong>SysEx</strong> – Geräte- und Klangerzeugerdaten</span></li>
+              <li><svg class="icon" aria-hidden="true">
+                  <use href="#i-x"></use>
+                </svg><span><strong>Marker, Lyrics &amp; Instrumentennamen</strong> – sonstige Metadaten</span></li>
+            </ul>
+            <p class="detail__foot">Garantiert keine Controller-Spuren im Download.</p>
+          </article>
+        </div>
+
+        <p class="detail-note" data-reveal>
+          <svg class="icon" aria-hidden="true">
+            <use href="#i-lock"></use>
+          </svg>
+          Deine Originaldatei wird nie verändert. Der Download ist immer eine neue,
+          eigenständige MIDI-Datei.
+        </p>
+      </div>
+    </section>
+
+
+    <section class="section section--cta">
+      <div class="shell">
+        <div class="cta" data-reveal>
+          <div class="cta__glow" aria-hidden="true"></div>
+          <div class="cta__rings" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="cta__content">
+            <p class="eyebrow">Bereit?</p>
+            <h2>Saubere Spuren.<br>In Sekunden.</h2>
+            <p>Zieh dein MIDI rein – den Rest erledigt notenklar. Lokal, direkt und ohne Umwege.</p>
+            <button class="btn btn--primary btn--lg" type="button" data-open-picker>
+              MIDI säubern
+              <svg class="icon" aria-hidden="true">
+                <use href="#i-arrow"></use>
+              </svg>
+            </button>
+            <p class="cta__fineprint">
+              <svg class="icon" aria-hidden="true">
+                <use href="#i-lock"></use>
+              </svg>
+              Kein Upload. Kein Konto. Kein Ballast.
+            </p>
+          </div>
+          <div class="cta__visual" aria-hidden="true">
+            <div class="cta__disc">
+              <span></span><span></span><span></span>
+              <svg class="icon">
+                <use href="#i-note"></use>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <a class="brand" href="#top" aria-label="notenklar – zum Seitenanfang">
+            <span class="brand__mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M8 16V6l11-2v10" />
+                <circle cx="5.5" cy="17.5" r="2.5" />
+                <circle cx="16.5" cy="15.5" r="2.5" />
+              </svg>
+            </span>
+            <span class="brand__name">notenklar</span>
+          </a>
+          <p>Nur Noten. Nichts anderes.</p>
+        </div>
+        <nav class="footer__nav" aria-label="Footer-Navigation">
+          <a href="#funktionen">Funktionen</a>
+          <a href="#ablauf">Ablauf</a>
+          <a href="#details">Details</a>
+        </nav>
+        <div class="footer__badge">
+          <svg class="icon" aria-hidden="true">
+            <use href="#i-lock"></use>
+          </svg>
+          100 % lokal
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p>© <span id="year">2026</span> notenklar · MIDI bleibt bei dir.</p>
+        <p>Gemacht für saubere Sessions.</p>
+      </div>
+    </div>
+  </footer>
+
+  <div class="drop-overlay" id="dropOverlay" aria-hidden="true">
+    <div class="drop-overlay__card">
+      <span class="drop-overlay__icon"><svg class="icon" aria-hidden="true">
+          <use href="#i-upload"></use>
+        </svg></span>
+      <strong>MIDI loslassen</strong>
+      <span>Wird sofort lokal bereinigt.</span>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
+    <span class="toast__icon"><svg class="icon" aria-hidden="true">
+        <use href="#i-check"></use>
+      </svg></span>
+    <span class="toast__text"></span>
+  </div>
+
+  <input type="file" id="fileInput" accept=".mid,.midi,.MID,.MIDI,audio/midi,audio/x-midi" multiple hidden>
+
+  <template id="tplFileCard">
+    <article class="filecard is-processing">
+      <div class="filecard__head">
+        <span class="filecard__icon" aria-hidden="true">
+          <svg class="icon">
+            <use href="#i-note"></use>
+          </svg>
+        </span>
+        <div class="filecard__identity">
+          <h3 class="filecard__name">MIDI-Datei</h3>
+          <p class="filecard__meta"></p>
+        </div>
+        <div class="filecard__head-actions">
+          <span class="badge badge--busy" data-role="badge">
+            <span class="badge__dot"></span>
+            <span data-role="badgeText">Wird bereinigt</span>
+          </span>
+          <button class="icon-btn" type="button" data-role="remove" aria-label="Datei entfernen"
+            title="Datei entfernen">
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-x"></use>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="process" data-role="process">
+        <div class="process__row">
+          <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="process__stage" data-role="stage">MIDI wird gelesen …</span>
+          <span class="process__pct" data-role="pct">0 %</span>
+        </div>
+        <div class="progress"><span data-role="bar"></span></div>
+      </div>
+
+      <div class="filecard__result" data-role="result" hidden>
+        <div class="filecard__stats">
+          <div class="stat">
+            <span class="stat__value" data-role="notes">0</span>
+            <span class="stat__label">Noten behalten</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value" data-role="removed">0</span>
+            <span class="stat__label">Ereignisse entfernt</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value" data-role="tracks">0</span>
+            <span class="stat__label">Spuren</span>
+          </div>
+          <div class="stat">
+            <span class="stat__value" data-role="length">00:00</span>
+            <span class="stat__label">Länge</span>
+          </div>
+        </div>
+
+        <div class="breakdown" data-role="breakdown" role="group" aria-label="Entfernte Ereignisse nach Typ"></div>
+
+        <div class="preview">
+          <div class="preview__head">
+            <div class="preview__title">
+              <span class="preview__dot" aria-hidden="true"></span>
+              <span>Notenvorschau</span>
+              <span class="preview__tag">Synth</span>
+            </div>
+            <div class="preview__actions">
+              <button class="play-btn" type="button" data-role="play" aria-label="Vorschau abspielen">
+                <span class="play-btn__icon play-btn__icon--play"><svg class="icon" aria-hidden="true">
+                    <use href="#i-play"></use>
+                  </svg></span>
+                <span class="play-btn__icon play-btn__icon--stop"><svg class="icon" aria-hidden="true">
+                    <use href="#i-stop"></use>
+                  </svg></span>
+                <span class="play-btn__label" data-role="playLabel">Anhören</span>
+              </button>
+              <span class="preview__time" data-role="time">00:00 / 00:00</span>
+            </div>
+          </div>
+          <div class="roll" data-role="roll">
+            <canvas data-role="canvas" role="img" aria-label="Piano-Roll-Vorschau der bereinigten Noten"></canvas>
+            <span class="roll__range" data-role="range"></span>
+            <span class="roll__truncated" data-role="truncated" hidden>Vorschau gekürzt</span>
+          </div>
+        </div>
+
+        <div class="filecard__foot">
+          <p class="filecard__footnote">
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-check"></use>
+            </svg>
+            <span>Nur Noten · Tempo &amp; Takt erhalten</span>
+          </p>
+          <button class="btn btn--primary download-btn" type="button" data-role="download">
+            <svg class="icon" aria-hidden="true">
+              <use href="#i-download"></use>
+            </svg>
+            <span>Bereinigte MIDI</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="filecard__error" data-role="error" hidden>
+        <span class="filecard__error-icon" aria-hidden="true">!</span>
+        <div>
+          <strong>Diese Datei konnte nicht gelesen werden.</strong>
+          <p data-role="errorText"></p>
+        </div>
+      </div>
+    </article>
+  </template>
+
+</body>
+
+</html>
